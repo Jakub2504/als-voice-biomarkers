@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ELA Acoustic Biomarker System</title>
+<style>
+  :root {
+    --primary:   #1F3864;
+    --accent:    #2E5C8A;
+    --light:     #4B9CD3;
+    --bulbar:    #E05C4B;
+    --nobulbar:  #F4A236;
+    --control:   #5A8F59;
+    --bg:        #F7F9FC;
+    --surface:   #FFFFFF;
+    --border:    #DDE3EC;
+    --text:      #1A2332;
+    --muted:     #6B7A90;
+    --radius:    10px;
+    --shadow:    0 2px 12px rgba(31,56,100,0.09);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* Layout */
+  .app { display: grid; grid-template-columns: 260px 1fr; min-height: 100vh; }
+  .sidebar { background: var(--primary); color: #fff; padding: 24px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .main { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; max-width: 1000px; }
+
+  /* Sidebar */
+  .logo { font-size: 17px; font-weight: 700; letter-spacing: .4px; padding: 8px 0 20px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 12px; }
+  .logo span { display: block; font-size: 11px; font-weight: 400; opacity: .65; margin-top: 3px; }
+  .nav-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; opacity: .5; margin-top: 16px; padding: 0 8px; }
+  .nav-btn { background: transparent; border: none; color: #fff; text-align: left; padding: 9px 12px; border-radius: 7px; cursor: pointer; font-size: 13.5px; width: 100%; transition: background .15s; display: flex; align-items: center; gap: 9px; }
+  .nav-btn:hover { background: rgba(255,255,255,0.1); }
+  .nav-btn.active { background: rgba(255,255,255,0.18); font-weight: 600; }
+  .nav-btn .icon { width: 18px; text-align: center; opacity: .8; }
+  .status-bar { margin-top: auto; padding: 12px; background: rgba(255,255,255,0.07); border-radius: 7px; font-size: 12px; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #6ee7b7; margin-right: 6px; }
+  .status-dot.offline { background: #f87171; }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; box-shadow: var(--shadow); }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .card-title .badge { font-size: 11px; font-weight: 500; background: #E8EEF6; color: var(--accent); padding: 2px 8px; border-radius: 20px; }
+
+  /* Form controls */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  select, input[type=range] { border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font-size: 13.5px; color: var(--text); background: var(--bg); width: 100%; outline: none; transition: border .15s; }
+  select:focus { border-color: var(--light); }
+  input[type=range] { padding: 4px 0; cursor: pointer; }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 7px; border: none; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--border); }
+  .btn-outline:hover { border-color: var(--light); background: #f0f5fc; }
+  .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px 12px; background: #f0f4fa; color: var(--primary); font-weight: 700; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f8fafd; }
+
+  /* Labels / chips */
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+  .chip-bulbar    { background: #fde8e5; color: var(--bulbar); }
+  .chip-nobulbar  { background: #fef3e2; color: #b45309; }
+  .chip-control   { background: #e6f4e6; color: var(--control); }
+
+  /* Report output */
+  .report-box { background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 20px; font-size: 13.5px; line-height: 1.75; white-space: pre-wrap; max-height: 520px; overflow-y: auto; color: var(--text); font-family: 'Segoe UI', sans-serif; }
+  .report-meta { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-bottom: 12px; flex-wrap: wrap; }
+  .report-meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* Coherence */
+  .coherence-bar { height: 6px; border-radius: 3px; background: #e5e7eb; margin: 8px 0; }
+  .coherence-fill { height: 100%; border-radius: 3px; background: #22c55e; transition: width .4s; }
+
+  /* Loaders */
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay { display: none; text-align: center; padding: 32px; color: var(--muted); }
+  .loading-overlay.visible { display: block; }
+
+  /* Alerts */
+  .alert { padding: 10px 14px; border-radius: 7px; font-size: 13px; margin-bottom: 12px; }
+  .alert-error { background: #fde8e5; color: #b91c1c; border-left: 3px solid var(--bulbar); }
+  .alert-success { background: #e6f4e6; color: #166534; border-left: 3px solid var(--control); }
+  .alert-info { background: #e8eef6; color: var(--accent); border-left: 3px solid var(--light); }
+
+  /* Section visibility */
+  .section { display: none; }
+  .section.active { display: flex; flex-direction: column; gap: 20px; }
+
+  /* SHAP bar chart */
+  .shap-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: 12.5px; }
+  .shap-label { width: 180px; text-align: right; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .shap-bar-wrap { flex: 1; height: 14px; background: #eef1f6; border-radius: 3px; overflow: hidden; }
+  .shap-bar { height: 100%; background: linear-gradient(90deg, var(--light), var(--accent)); border-radius: 3px; transition: width .5s; }
+  .shap-val { width: 60px; color: var(--muted); font-size: 11.5px; }
+
+  /* Patient detail */
+  .patient-header { display: flex; align-items: center; gap: 16px; padding: 16px; background: #f0f5fc; border-radius: 8px; }
+  .patient-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+  .patient-info h3 { font-size: 15px; font-weight: 700; }
+  .patient-info p { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .patient-labels { display: flex; gap: 6px; margin-top: 6px; }
+
+  /* Stats grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat-card { text-align: center; padding: 16px 12px; background: #f5f8fe; border-radius: 8px; border: 1px solid var(--border); }
+  .stat-val { font-size: 22px; font-weight: 700; color: var(--primary); }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: .4px; }
+
+  @media (max-width: 768px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo">
+      ELA Biomarker
+      <span>Sistema de análisis acústico</span>
+    </div>
+
+    <div class="nav-label">Navegación</div>
+    <button class="nav-btn active" onclick="showSection('dashboard')" id="nav-dashboard">
+      <span class="icon">◈</span> Dashboard
+    </button>
+    <button class="nav-btn" onclick="showSection('subjects')" id="nav-subjects">
+      <span class="icon">◉</span> Sujetos
+    </button>
+    <button class="nav-btn" onclick="showSection('results')" id="nav-results">
+      <span class="icon">◫</span> Resultados ML
+    </button>
+    <button class="nav-btn" onclick="showSection('shap')" id="nav-shap">
+      <span class="icon">◳</span> Importancia SHAP
+    </button>
+    <button class="nav-btn" onclick="showSection('reports')" id="nav-reports">
+      <span class="icon">◈</span> Generar informes
+    </button>
+
+    <div class="status-bar" id="status-bar">
+      <span class="status-dot offline" id="status-dot"></span>
+      <span id="status-text">Conectando...</span>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="section active" id="section-dashboard">
+      <div class="card">
+        <div class="card-title">Estado del sistema <span class="badge" id="badge-status">Cargando...</span></div>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card"><div class="stat-val" id="stat-subjects">—</div><div class="stat-label">Sujetos</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-features">—</div><div class="stat-label">Features</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-model">—</div><div class="stat-label">LLM</div></div>
+          <div class="stat-card"><div class="stat-val" id="stat-apikey">—</div><div class="stat-label">API Key</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pipeline del sistema</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)">
+          <span style="background:#e8eef6;color:var(--accent);padding:5px 12px;border-radius:20px;font-weight:600">MATLAB</span>
+          <span>→</span>
+          <span style="background:#e8eef6;color:var(--accent);padding:5px 12px;border-radius:20px;font-weight:600">preprocessing.py</span>
+          <span>→</span>
+          <span style="background:#e8eef6;color:var(--accent);padding:5px 12px;border-radius:20px;font-weight:600">label_loader.py</span>
+          <span>→</span>
+          <span style="background:#e8eef6;color:var(--accent);padding:5px 12px;border-radius:20px;font-weight:600">EDA</span>
+          <span>→</span>
+          <span style="background:#e8eef6;color:var(--accent);padding:5px 12px;border-radius:20px;font-weight:600">ML (6 modelos)</span>
+          <span>→</span>
+          <span style="background:var(--accent);color:#fff;padding:5px 12px;border-radius:20px;font-weight:600">LLM (Llama-3.3-70B)</span>
+          <span>→</span>
+          <span style="background:var(--primary);color:#fff;padding:5px 12px;border-radius:20px;font-weight:600">Informes clínicos</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subjects -->
+    <div class="section" id="section-subjects">
+      <div class="card">
+        <div class="card-title">Sujetos del dataset</div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="loadSubjects('')">Todos</button>
+          <button class="btn btn-outline" onclick="loadSubjects('ELA_bulbar')">ELA Bulbar</button>
+          <button class="btn btn-outline" onclick="loadSubjects('ELA_no_bulbar')">ELA No Bulbar</button>
+          <button class="btn btn-outline" onclick="loadSubjects('Control')">Control</button>
+        </div>
+        <div class="loading-overlay" id="subjects-loading">Cargando sujetos...</div>
+        <div id="subjects-table"></div>
+      </div>
+    </div>
+
+    <!-- ML Results -->
+    <div class="section" id="section-results">
+      <div class="card">
+        <div class="card-title">Resultados de experimentos ML <span class="badge">Top 20 por AUC-ROC</span></div>
+        <div style="display:flex;gap:10px;margin-bottom:16px">
+          <button class="btn btn-outline" onclick="loadResults('')">Todos</button>
+          <button class="btn btn-outline" onclick="loadResults('clinico')">Clínico</button>
+          <button class="btn btn-outline" onclick="loadResults('maquina')">Máquina</button>
+        </div>
+        <div class="loading-overlay" id="results-loading">Cargando resultados...</div>
+        <div id="results-table"></div>
+      </div>
+    </div>
+
+    <!-- SHAP -->
+    <div class="section" id="section-shap">
+      <div class="card">
+        <div class="card-title">Importancia SHAP de biomarcadores acústicos</div>
+        <p style="color:var(--muted);font-size:13px;margin-bottom:18px">
+          Los valores SHAP cuantifican la contribución de cada biomarcador a la predicción del mejor modelo.
+          Un valor más alto indica mayor influencia en la discriminación entre clases.
+        </p>
+        <div class="loading-overlay" id="shap-loading">Cargando...</div>
+        <div id="shap-chart"></div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div class="section" id="section-reports">
+      <div class="card">
+        <div class="card-title">Generación de informes clínicos</div>
+
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group">
+            <label>Sujeto</label>
+            <select id="report-subject">
+              <option value="">— Seleccionar sujeto —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Sistema de etiquetado</label>
+            <select id="report-labelsys">
+              <option value="clinico">Clínico (diagnóstico médico)</option>
+              <option value="maquina">Máquina (reetiquetado S4VM)</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="patient-preview" style="display:none;margin-bottom:16px"></div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btn-acoustic" onclick="generateReport('acoustic')" disabled>
+            Estado acústico
+          </button>
+          <button class="btn btn-primary" id="btn-classification" onclick="generateReport('classification')" disabled>
+            Clasificación
+          </button>
+          <button class="btn btn-primary" id="btn-evolutionary" onclick="generateReport('evolutionary')" disabled>
+            Evolutivo
+          </button>
+        </div>
+      </div>
+
+      <div class="card" id="report-output-card" style="display:none">
+        <div class="card-title" id="report-output-title">Informe generado</div>
+        <div class="report-meta" id="report-meta"></div>
+        <div id="coherence-section" style="display:none;margin-bottom:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">Coherencia numérica</div>
+          <div class="coherence-bar"><div class="coherence-fill" id="coherence-fill"></div></div>
+          <div style="font-size:12px;color:var(--muted)" id="coherence-text"></div>
+        </div>
+        <div class="report-box" id="report-text"></div>
+        <div style="margin-top:12px">
+          <button class="btn btn-outline" onclick="copyReport()">Copiar texto</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+
+  if (name === 'subjects' && !document.getElementById('subjects-table').innerHTML) loadSubjects('');
+  if (name === 'results'  && !document.getElementById('results-table').innerHTML)  loadResults('');
+  if (name === 'shap'     && !document.getElementById('shap-chart').innerHTML)     loadShap();
+  if (name === 'reports'  && !document.getElementById('report-subject').options.length > 1) loadSubjectOptions();
+}
+
+// ── API helpers ──────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(API + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    throw new Error(err.detail || res.statusText);
+  }
+  return res.json();
+}
+
+function chipClass(label) {
+  if (!label) return '';
+  if (label === 'ELA_bulbar')    return 'chip-bulbar';
+  if (label === 'ELA_no_bulbar') return 'chip-nobulbar';
+  return 'chip-control';
+}
+
+// ── Health check ─────────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const h = await apiFetch('/health');
+    document.getElementById('status-dot').classList.remove('offline');
+    document.getElementById('status-text').textContent = 'API conectada';
+    document.getElementById('badge-status').textContent = 'En línea';
+    document.getElementById('badge-status').style.background = '#e6f4e6';
+    document.getElementById('badge-status').style.color = '#166534';
+    document.getElementById('stat-subjects').textContent = h.n_subjects;
+    document.getElementById('stat-features').textContent = h.n_features;
+    document.getElementById('stat-model').textContent = 'Llama-3.3';
+    document.getElementById('stat-apikey').textContent = h.groq_api_key ? '✓' : '✗';
+  } catch (e) {
+    document.getElementById('status-text').textContent = 'Sin conexión';
+    document.getElementById('badge-status').textContent = 'Offline';
+  }
+}
+
+// ── Subjects ─────────────────────────────────────────────────────────────────
+async function loadSubjects(label) {
+  const el = document.getElementById('subjects-table');
+  const loading = document.getElementById('subjects-loading');
+  el.innerHTML = '';
+  loading.classList.add('visible');
+  try {
+    const url = label ? `/subjects?label=${label}` : '/subjects';
+    const data = await apiFetch(url);
+    loading.classList.remove('visible');
+    if (!data.subjects.length) { el.innerHTML = '<p style="color:var(--muted)">Sin resultados.</p>'; return; }
+
+    let html = `<p style="color:var(--muted);font-size:12px;margin-bottom:10px">${data.total} sujetos encontrados</p>
+    <table><thead><tr>
+      <th>ID</th><th>Género</th><th>Label clínico</th><th>Label máquina</th><th></th>
+    </tr></thead><tbody>`;
+
+    data.subjects.forEach(s => {
+      const lcClass = chipClass(s.label_clinico);
+      const lmClass = chipClass(s.label_maquina);
+      const changed = s.label_clinico !== s.label_maquina ? '⚡' : '';
+      html += `<tr>
+        <td><strong>${s.subject_id}</strong></td>
+        <td>${s.genero}</td>
+        <td><span class="chip ${lcClass}">${s.label_clinico}</span></td>
+        <td><span class="chip ${lmClass}">${s.label_maquina}</span> ${changed}</td>
+        <td><button class="btn btn-outline" style="padding:4px 10px;font-size:12px"
+          onclick="openReport('${s.subject_id}')">Informe</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  } catch (e) {
+    loading.classList.remove('visible');
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+function openReport(subjectId) {
+  showSection('reports');
+  setTimeout(() => {
+    const sel = document.getElementById('report-subject');
+    if (sel.querySelector(`option[value="${subjectId}"]`)) {
+      sel.value = subjectId;
+      onSubjectChange();
+    }
+  }, 300);
+}
+
+// ── ML Results ────────────────────────────────────────────────────────────────
+async function loadResults(labelSys) {
+  const el = document.getElementById('results-table');
+  const loading = document.getElementById('results-loading');
+  el.innerHTML = '';
+  loading.classList.add('visible');
+  try {
+    const url = labelSys ? `/results?label_system=${labelSys}&top_n=20` : '/results?top_n=20';
+    const data = await apiFetch(url);
+    loading.classList.remove('visible');
+    if (!data.results.length) { el.innerHTML = '<div class="alert alert-info">Ejecuta ml_experiments.ipynb primero.</div>'; return; }
+
+    let html = '<table><thead><tr><th>Experimento</th><th>Modelo</th><th>AUC-ROC</th><th>F1-macro</th><th>Recall</th><th>Espec.</th></tr></thead><tbody>';
+    data.results.forEach(r => {
+      const auc = parseFloat(r.auc_roc_mean);
+      const aucColor = auc >= 0.8 ? '#166534' : auc >= 0.65 ? '#b45309' : '#b91c1c';
+      html += `<tr>
+        <td style="font-size:12px">${r.experiment}</td>
+        <td><strong>${r.model}</strong></td>
+        <td style="color:${aucColor};font-weight:700">${auc.toFixed(3)} <span style="color:var(--muted);font-weight:400;font-size:11px">±${parseFloat(r.auc_roc_std).toFixed(3)}</span></td>
+        <td>${parseFloat(r.f1_macro_mean).toFixed(3)}</td>
+        <td>${parseFloat(r.recall_mean).toFixed(3)}</td>
+        <td>${parseFloat(r.specificity_mean).toFixed(3)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  } catch (e) {
+    loading.classList.remove('visible');
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+// ── SHAP ──────────────────────────────────────────────────────────────────────
+async function loadShap() {
+  const el = document.getElementById('shap-chart');
+  const loading = document.getElementById('shap-loading');
+  loading.classList.add('visible');
+  try {
+    const data = await apiFetch('/shap?top_n=25');
+    loading.classList.remove('visible');
+    if (!data.features.length) { el.innerHTML = '<div class="alert alert-info">Ejecuta ml_experiments.ipynb primero.</div>'; return; }
+
+    const maxVal = Math.max(...data.features.map(f => f.mean_shap));
+    let html = '';
+    data.features.forEach((f, i) => {
+      const pct = (f.mean_shap / maxVal * 100).toFixed(1);
+      const opacity = 0.4 + 0.6 * (f.mean_shap / maxVal);
+      html += `<div class="shap-row">
+        <div class="shap-label" title="${f.feature}">${i+1}. ${f.feature}</div>
+        <div class="shap-bar-wrap">
+          <div class="shap-bar" style="width:${pct}%;opacity:${opacity}"></div>
+        </div>
+        <div class="shap-val">${f.mean_shap.toFixed(5)}</div>
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch (e) {
+    loading.classList.remove('visible');
+    el.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+  }
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+async function loadSubjectOptions() {
+  try {
+    const data = await apiFetch('/subjects');
+    const sel = document.getElementById('report-subject');
+    sel.innerHTML = '<option value="">— Seleccionar sujeto —</option>';
+    data.subjects.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.subject_id;
+      opt.textContent = `${s.subject_id} — ${s.label_clinico}`;
+      sel.appendChild(opt);
+    });
+    sel.onchange = onSubjectChange;
+  } catch(e) { /* silent */ }
+}
+
+function onSubjectChange() {
+  const sid = document.getElementById('report-subject').value;
+  const hasSubject = !!sid;
+  ['btn-acoustic', 'btn-classification', 'btn-evolutionary'].forEach(id => {
+    document.getElementById(id).disabled = !hasSubject;
+  });
+
+  const preview = document.getElementById('patient-preview');
+  if (!hasSubject) { preview.style.display = 'none'; return; }
+
+  apiFetch(`/subjects/${sid}/features`).then(data => {
+    const lcClass = chipClass(data.label_clinico);
+    const lmClass = chipClass(data.label_maquina);
+    const changed = data.label_clinico !== data.label_maquina;
+    preview.style.display = 'block';
+    preview.innerHTML = `<div class="patient-header">
+      <div class="patient-avatar">${data.subject_id[0]}</div>
+      <div class="patient-info">
+        <h3>${data.subject_id}</h3>
+        <p>${data.genero} · ${data.n_features} biomarcadores acústicos</p>
+        <div class="patient-labels">
+          <span class="chip ${lcClass}">${data.label_clinico}</span>
+          ${changed ? `<span class="chip ${lmClass}">${data.label_maquina} ⚡</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).catch(() => { preview.style.display = 'none'; });
+}
+
+async function generateReport(type) {
+  const sid       = document.getElementById('report-subject').value;
+  const labelSys  = document.getElementById('report-labelsys').value;
+  if (!sid) return;
+
+  const btn = document.getElementById('btn-' + type);
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<span class="spinner"></span> Generando...';
+  btn.disabled = true;
+  ['btn-acoustic','btn-classification','btn-evolutionary'].forEach(id => {
+    document.getElementById(id).disabled = true;
+  });
+
+  const titles = {
+    'acoustic':       'Informe de estado acústico',
+    'classification': 'Informe de clasificación',
+    'evolutionary':   'Informe evolutivo (longitudinal)',
+  };
+
+  try {
+    let endpoint, body;
+    if (type === 'evolutionary') {
+      endpoint = '/report/evolutionary';
+      body = JSON.stringify({ subject_id: sid, label_system: labelSys, noise_level: 0.05 });
+    } else {
+      endpoint = `/report/${type}`;
+      body = JSON.stringify({ subject_id: sid, label_system: labelSys, n_shap: 10 });
+    }
+
+    const data = await apiFetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    });
+
+    document.getElementById('report-output-card').style.display = 'block';
+    document.getElementById('report-output-title').textContent = titles[type];
+    document.getElementById('report-text').textContent = data.report_text;
+    document.getElementById('report-meta').innerHTML = `
+      <span>🧬 ${data.subject_id}</span>
+      <span>🏷 ${labelSys}</span>
+      <span>🕐 ${new Date(data.generated_at).toLocaleString('es-ES')}</span>
+      <span>🤖 Llama-3.3-70B · Groq</span>`;
+
+    if (data.coherence) {
+      const coh = data.coherence;
+      const pct = Math.round((coh.passed / coh.total) * 100);
+      document.getElementById('coherence-section').style.display = 'block';
+      document.getElementById('coherence-fill').style.width = pct + '%';
+      document.getElementById('coherence-text').textContent =
+        `${coh.passed}/${coh.total} valores numéricos verificados (${pct}%)`;
+    } else {
+      document.getElementById('coherence-section').style.display = 'none';
+    }
+
+    document.getElementById('report-output-card').scrollIntoView({ behavior: 'smooth' });
+
+  } catch (e) {
+    document.getElementById('report-output-card').style.display = 'block';
+    document.getElementById('report-text').textContent = '';
+    document.getElementById('report-output-title').textContent = 'Error';
+    document.getElementById('report-meta').innerHTML =
+      `<div class="alert alert-error">${e.message}</div>`;
+  } finally {
+    btn.innerHTML = origText;
+    ['btn-acoustic','btn-classification','btn-evolutionary'].forEach(id => {
+      document.getElementById(id).disabled = false;
+    });
+  }
+}
+
+function copyReport() {
+  const text = document.getElementById('report-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => { btn.textContent = 'Copiar texto'; }, 2000);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+checkHealth();
+loadSubjectOptions();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>

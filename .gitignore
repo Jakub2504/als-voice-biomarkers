@@ -1,0 +1,34 @@
+# ── Secretos / credenciales ──
+.env
+.env.*
+!.env.example
+
+# ── Entorno Python ──
+tfg_env/
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# ── Datos clínicos (RGPD) y audio — NO subir ──
+data/
+
+# ── Salidas generadas ──
+reports/
+mlruns/
+logs/
+models/
+catboost_info/
+
+# ── Presentación, memoria y documentos — NO subir ──
+presentacion/
+tfg_final.txt
+
+# ── Configuración de herramientas / editor ──
+.claude/
+.vscode/
+.idea/
+
+# ── Sistema operativo ──
+.DS_Store
+Thumbs.db
+desktop.ini
