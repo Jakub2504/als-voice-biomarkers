@@ -60,6 +60,13 @@ The S4VM figure should be read as an experimental upper bound on this corpus rat
 - **The report module was evaluated qualitatively**, on the three report types rather than with a full quantitative rubric.
 - **This is a support tool, not a diagnostic system.** Every output requires review by a qualified professional.
 
+## What I learned
+
+- Model performance and clinical usefulness are different problems.
+- Explainability matters when model outputs need to be inspected by domain experts.
+- LLM-generated reports are only useful when grounded in structured model outputs.
+- Turning research code into an API and usable interface introduces a different set of engineering constraints from experimentation alone.
+
 ## Structure
 
 ```
@@ -77,13 +84,6 @@ notebooks/
 requirements.txt
 .env.example
 ```
-
-## What I learned
-
-- Model performance and clinical usefulness are different problems.
-- Explainability matters when model outputs need to be inspected by domain experts.
-- LLM-generated reports are only useful when grounded in structured model outputs.
-- Turning research code into an API and usable interface introduces a different set of engineering constraints from experimentation alone.
 
 ## Data
 
