@@ -1,23 +1,64 @@
 # Acoustic Voice Biomarkers for ALS
 
-Bachelor's thesis (TFG) — **Jakub Wysocki**
-BSc in Computer Engineering (GEI-IGD) · Universitat de Lleida — Igualada campus
-Supervisor: **Alberto Tena**
+**An end-to-end system that analyses voice recordings to support the monitoring of ALS** (amyotrophic lateral sclerosis): acoustic biomarkers → ML classification → SHAP explainability → LLM-drafted clinical reports → REST API and web portal.
 
-A support system for monitoring **amyotrophic lateral sclerosis (ALS)** through voice analysis. It runs end to end: it extracts acoustic biomarkers, classifies bulbar involvement with machine learning, explains the model's decisions, and generates clinical reports automatically with a large language model — all served through a REST API and a web portal.
+`Python` · `scikit-learn` · `XGBoost / LightGBM / CatBoost` · `Optuna` · `SHAP` · `Llama-3.3-70B (Groq)` · `FastAPI` · `MLflow`
 
 > A tool to **support clinical interpretation**, not to diagnose. Every prediction needs review by a qualified health professional.
 
+**What this project demonstrates:** taking a clinical research problem end to end — feature engineering, model selection and validation, explainability, LLM report generation, and the API and portal that make it usable.
+
+Bachelor's thesis (TFG), graded 10/10 · **Jakub Wysocki** · BSc in Computer Engineering, Universitat de Lleida (Igualada campus) · Supervisor: **Alberto Tena**
+
+---
+
 ## What it does
 
-A reproducible pipeline in six stages:
+**Clinical research support** — Builds a reproducible dataset from the acoustic features of five sustained vowels, integrates the clinical labels, and applies semi-supervised relabeling (S4VM) as an exploratory analysis.
 
-1. **Preprocessing** of the acoustic features from five sustained vowels, merged into a single dataset.
-2. **Label integration** (clinical labels) and semi-supervised relabeling (S4VM).
-3. **Classification** with six models (Logistic Regression, Random Forest, XGBoost, LightGBM, CatBoost, SVM), stratified 5-fold cross-validation and Optuna hyperparameter optimization.
-4. **Explainability** with SHAP, down to the individual biomarker.
-5. **Clinical reports** written in natural language by an LLM (Llama-3.3-70B via Groq).
-6. **REST API** (FastAPI) and a **web portal** to explore subjects, results, SHAP importance and reports.
+**ML classification** — Six models (Logistic Regression, Random Forest, XGBoost, LightGBM, CatBoost, SVM) with stratified 5-fold cross-validation and Optuna hyperparameter optimization.
+
+**Explainability** — SHAP values at the level of the individual biomarker, so each prediction can be traced back to the acoustic features that drove it.
+
+**LLM report generation** — Llama-3.3-70B (via Groq) converts the classification results and SHAP-derived information into a structured clinical report, constrained to the supplied outputs and always flagged for professional review.
+
+**API & software engineering** — A FastAPI REST API and a web portal expose subjects, results, SHAP importance and generated reports end to end.
+
+## Architecture
+
+```text
+Voice recordings
+       ↓
+Acoustic feature extraction
+       ↓
+Data preprocessing & label integration
+       ↓
+ML models + cross-validation
+       ↓
+SHAP explainability
+       ↓
+Structured model outputs
+       ↓
+Llama-3.3-70B report generation
+       ↓
+FastAPI REST API
+       ↓
+Web portal
+```
+
+## Main result
+
+For discriminating **bulbar vs non-bulbar** involvement, the best model (Random Forest with S4VM relabeling) reaches an **AUC-ROC of 0.910 ± 0.066**. SHAP points to the vowel /e/ and the time-frequency descriptors as the most informative features.
+
+The S4VM figure should be read as an experimental upper bound on this corpus rather than clinical performance: the relabeling and the evaluation share the same data. What it supports is a falsifiable hypothesis, not a validated result.
+
+## Limitations
+
+- **63 subjects.** Enough for a proof of concept and for generating hypotheses, not for claiming generalisation.
+- **No external validation set.** All results come from cross-validation on a single corpus.
+- **The S4VM finding is exploratory.** It needs neurologist-verified labels and an independent test set before it means anything clinically.
+- **The report module was evaluated qualitatively**, on the three report types rather than with a full quantitative rubric.
+- **This is a support tool, not a diagnostic system.** Every output requires review by a qualified professional.
 
 ## Structure
 
@@ -36,6 +77,13 @@ notebooks/
 requirements.txt
 .env.example
 ```
+
+## What I learned
+
+- Model performance and clinical usefulness are different problems.
+- Explainability matters when model outputs need to be inspected by domain experts.
+- LLM-generated reports are only useful when grounded in structured model outputs.
+- Turning research code into an API and usable interface introduces a different set of engineering constraints from experimentation alone.
 
 ## Data
 
@@ -61,10 +109,6 @@ uvicorn src.api:app --reload
 # Portal:  http://localhost:8000
 # Swagger: http://localhost:8000/docs
 ```
-
-## Main result
-
-For discriminating **bulbar vs non-bulbar** involvement, the best model (Random Forest with S4VM relabeling) reaches an **AUC-ROC of 0.910 ± 0.066**. SHAP points to the vowel /e/ and the time-frequency descriptors as the most informative features.
 
 ## Context
 
